@@ -1,14 +1,18 @@
 import csv
-import random
+# import random
 import locale
 locale.setlocale( locale.LC_ALL, 'en_US.UTF-8' )  # so you can interpret e.g. "1,000.0" as a number
+
+import openpyxl as opx
+import datetime
+
+
 
 # cols in export from IB
 ib_export = {'ticker':1, 'sec_type':2, 'exchange':3, 'datestr':4, 'strike':5, 'putcall':6, 'size':7}
 
 
 # will hold beta for stock tickers as dict
-
 
 tickers = dict()
 
@@ -56,12 +60,24 @@ known_betas={'RUT':1, 'SX7P':1, 'SI':0, 'ROKU':2, 'ZAR':0, 'NG':0, 'LK':0.2,
              'HCC':0.5, 'ZM':1.7, 'FTMIB':1, 'ESTX50':1, 'ES':1, 'EMB':0, 'CVNA':1.5, 'CL':0,
              'BNDX':1.8, 'BTP':0, 'BKLN':0}
 
+def write_row(ws,row_number, col_start, lst):
+    c = col_start
+    for i in lst:
+        ws.cell(row_number, c).value = i
+        c += 1
+    
+
 def main():
     betas = read_betas()
     # can display_betas to check
     positions = read_positions()
     #display_positions(positions)
     aggregate_delta = 0
+    wb = opx.Workbook() # workbook
+    ws = wb.create_sheet('Delta Calc', 0)
+    excel_row = 1
+    write_row(ws, excel_row, 1, ["Instrument", "Beta", "Delta", "SPX Equiv"])
+    excel_row += 1
     for i in positions:
         beta = i['Beta']
         delta = i['Delta Dollars']
@@ -76,14 +92,18 @@ def main():
             else:
                 print("ignoring: {0:}".format(i))
         delta_pos = betav*locale.atof(delta)
-        print("{0:}, {1:.0f}".format(i['Financial Instrument'], delta_pos))            
+        fi = i['Financial Instrument']
+        print("{0:}, {1:.0f}".format(fi, delta_pos))
+        if delta_pos != 0:
+            write_row(ws, excel_row, 1, [fi, betav, delta, delta_pos])
+            excel_row += 1
+        
         aggregate_delta += delta_pos
                       
 ##        if beta.isnumeric() and delta.isnumeric():
 ##            print("Beta: {0:}, Delta Dollars: {1:}".format(beta , delta))
 ##            
-
-    print("Overall exposure: {0:.0f}".format(aggregate_delta))
-    
+    wb.save("Delta_Values_"+datetime.datetime.now().strftime("%H%M%S")+".xlsx")
+    print("Overall exposure: {0:.0f}".format(aggregate_delta))    
 
 main()        
