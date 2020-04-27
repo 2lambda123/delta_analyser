@@ -1,3 +1,5 @@
+#!/usr/bin/python 
+
 import csv
 # import random
 import locale
@@ -7,7 +9,7 @@ import openpyxl as opx
 import datetime
 
 import sys
-
+import getopt
 
 # cols in export from IB
 ib_export = {'ticker':1, 'sec_type':2, 'exchange':3, 'datestr':4, 'strike':5, 'putcall':6, 'size':7}
@@ -78,17 +80,40 @@ def write_row(ws,row_number, col_start, lst):
         ws.cell(row_number, c).value = i
         c += 1
 
+def atof(cell):
+    try:
+        return locale.atof(cell)
+    except ValueError:
+        return 0.0
 
-def main():
-    if len(sys.argv) > 1:
-        beta_workbook = sys.argv[1]
-    else:
-        beta_workbook =     "betavals.xlsx"
+def usage():
+    print("calc_deltas --betafile=<betas.xlsx> --positionfile=<positions.csv>")
 
-    if len(sys.argv) > 2:
-        positions_file = sys.argv[2]
-    else:
-        positions_file =    'full_positions1.csv'
+def main(argv):
+    beta_workbook =     "betavals.xlsx"
+    positions_file =    'positions.csv'
+
+    try:
+        opts, args = getopt.getopt(argv, "hb:p:",["betafile=", "positionfile="])
+    except getopt.GetoptError as err:
+        print(err)
+        usage()
+        sys.exit(2)
+    output = None
+    verbose = False
+    for o, a in opts:
+        if o == "-v":
+            verbose = True
+        elif o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif o in ("-b", "--betafile"):
+            beta_workbook = a
+        elif o in ("-p", "--positionfile"):
+            positions_file = a
+        else:
+            assert False, "unhandled option"
+
     # betas = read_betas(beta_workbook)
     # can display_betas to check
     positions = read_positions(positions_file)
@@ -100,7 +125,8 @@ def main():
     wb = opx.Workbook() # workbook
     ws = wb.create_sheet('Delta Calc', 0)
     excel_row = 1
-    write_row(ws, excel_row, 1, ["Instrument", "Beta", "Delta", "SPX Equiv"])
+    write_row(ws, excel_row, 1, ["Underlying", "Instrument", "Beta", "Delta",
+                                 "Position Delta", "Exposure"])
     excel_row += 1
     for i in positions:
         beta = i['Beta']
@@ -115,19 +141,19 @@ def main():
                 betav = known_betas[underlying]
             else:
                 print("ignoring: {0:}".format(i))
-        delta_pos = betav*locale.atof(delta)
+        delta_pos = betav * atof(delta)                
+            
         fi = i['Financial Instrument']
         print("{0:}, {1:.0f}".format(fi, delta_pos))
         if delta_pos != 0:
-            write_row(ws, excel_row, 1, [fi, betav, delta, delta_pos])
+            write_row(ws, excel_row, 1, [i["Underlying"], fi, betav,
+                                         atof(i["Delta"]), atof(delta), delta_pos])
             excel_row += 1
         
         aggregate_delta += delta_pos
                       
-##        if beta.isnumeric() and delta.isnumeric():
-##            print("Beta: {0:}, Delta Dollars: {1:}".format(beta , delta))
-##            
     wb.save("Delta_Values_"+datetime.datetime.now().strftime("%H%M%S")+".xlsx")
     print("Overall exposure: {0:.0f}".format(aggregate_delta))    
 
-main()        
+if __name__ == "__main__":
+   main(sys.argv[1:])
