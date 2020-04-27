@@ -17,6 +17,8 @@ ib_export = {'ticker':1, 'sec_type':2, 'exchange':3, 'datestr':4, 'strike':5, 'p
 
 # will hold beta for stock tickers as dict
 
+verbose = False
+
 tickers = dict()
 
 def read_positions_old():
@@ -94,7 +96,7 @@ def main(argv):
     positions_file =    'positions.csv'
 
     try:
-        opts, args = getopt.getopt(argv, "hb:p:",["betafile=", "positionfile="])
+        opts, args = getopt.getopt(argv, "hvb:p:",["verbose", "betafile=", "positionfile="])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -102,7 +104,7 @@ def main(argv):
     output = None
     verbose = False
     for o, a in opts:
-        if o == "-v":
+        if o in ("-v", "--verbose"):
             verbose = True
         elif o in ("-h", "--help"):
             usage()
@@ -119,8 +121,10 @@ def main(argv):
     positions = read_positions(positions_file)
     
     known_betas = read_known_betas(beta_workbook)
-    # print("known betas: {}".format(known_betas))
-    #display_positions(positions)
+    if verbose:
+        print("known betas: {}".format(known_betas))
+    if verbose:
+        display_positions(positions)
     aggregate_delta = 0
     wb = opx.Workbook() # workbook
     ws = wb.create_sheet('Delta Calc', 0)
@@ -144,7 +148,8 @@ def main(argv):
         delta_pos = betav * atof(delta)                
             
         fi = i['Financial Instrument']
-        print("{0:}, {1:.0f}".format(fi, delta_pos))
+        if verbose:
+            print("{0:}, {1:.0f}".format(fi, delta_pos))
         if delta_pos != 0:
             write_row(ws, excel_row, 1, [i["Underlying"], fi, betav,
                                          atof(i["Delta"]), atof(delta), delta_pos])
