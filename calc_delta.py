@@ -6,6 +6,7 @@ locale.setlocale( locale.LC_ALL, 'en_US.UTF-8' )  # so you can interpret e.g. "1
 import openpyxl as opx
 import datetime
 
+import sys
 
 
 # cols in export from IB
@@ -24,9 +25,9 @@ def read_positions_old():
             positions.append(row)
     return positions
 
-def read_positions():
+def read_positions(f):
     positions = [] # each entry will be of type dict
-    with open('full_positions1.csv', newline = '') as csvfile:
+    with open(f, newline = '') as csvfile:
         header = [h.strip() for h in csvfile.readline().split(',')]
         reader = csv.DictReader(csvfile, fieldnames=header)
         for row in reader:
@@ -56,21 +57,44 @@ def display_positions(p):
     for i in p:
         print (i)
 
-known_betas={'RUT':1, 'SX7P':1, 'SI':0, 'ROKU':2, 'ZAR':0, 'NG':0, 'LK':0.2,
-             'HCC':0.5, 'ZM':1.7, 'FTMIB':1, 'ESTX50':1, 'ES':1, 'EMB':0, 'CVNA':1.5, 'CL':0,
-             'BNDX':1.8, 'BTP':0, 'BKLN':0}
+#known_betas={'RUT':1, 'SX7P':1, 'SI':0, 'ROKU':2, 'ZAR':0, 'NG':0, 'LK':0.2,
+#             'HCC':0.5, 'ZM':1.7, 'FTMIB':1, 'ESTX50':1, 'ES':1, 'EMB':0, 'CVNA':1.5, 'CL':0,
+#             'BNDX':1.8, 'BTP':0, 'BKLN':0}
+
+def read_known_betas(f):  # read additional betas from excel worksheet
+    wb = opx.load_workbook(f)
+    ws = wb.active # there will be just one
+    betavals = dict()
+    for row in ws.rows:
+        if (row[0].value == "Ticker"): # i.e. 1st row
+            continue
+        betavals[row[0].value] = row[1].value
+    return betavals
+    
 
 def write_row(ws,row_number, col_start, lst):
     c = col_start
     for i in lst:
         ws.cell(row_number, c).value = i
         c += 1
-    
+
 
 def main():
-    betas = read_betas()
+    if len(sys.argv) > 1:
+        beta_workbook = sys.argv[1]
+    else:
+        beta_workbook =     "betavals.xlsx"
+
+    if len(sys.argv) > 2:
+        positions_file = sys.argv[2]
+    else:
+        positions_file =    'full_positions1.csv'
+    # betas = read_betas(beta_workbook)
     # can display_betas to check
-    positions = read_positions()
+    positions = read_positions(positions_file)
+    
+    known_betas = read_known_betas(beta_workbook)
+    # print("known betas: {}".format(known_betas))
     #display_positions(positions)
     aggregate_delta = 0
     wb = opx.Workbook() # workbook
