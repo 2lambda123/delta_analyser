@@ -19,6 +19,10 @@ ib_export = {'ticker':1, 'sec_type':2, 'exchange':3, 'datestr':4, 'strike':5, 'p
 
 verbose = False
 
+def quiet_print(*args):
+    if verbose:
+        print(args)
+
 tickers = dict()
 
 def read_positions_old():
@@ -55,11 +59,11 @@ def read_betas(): # read csv file with betas in
 
 def display_betas(betas):
     for i in betas:
-        print(i, betas[i])
+        quiet_print(i, betas[i])
 
 def display_positions(p):
     for i in p:
-        print (i)
+        quiet_print (i)
 
 #known_betas={'RUT':1, 'SX7P':1, 'SI':0, 'ROKU':2, 'ZAR':0, 'NG':0, 'LK':0.2,
 #             'HCC':0.5, 'ZM':1.7, 'FTMIB':1, 'ESTX50':1, 'ES':1, 'EMB':0, 'CVNA':1.5, 'CL':0,
@@ -121,10 +125,8 @@ def main(argv):
     positions = read_positions(positions_file)
     
     known_betas = read_known_betas(beta_workbook)
-    if verbose:
-        print("known betas: {}".format(known_betas))
-    if verbose:
-        display_positions(positions)
+    quiet_print("known betas: {}".format(known_betas))
+    display_positions(positions)
     aggregate_delta = 0
     wb = opx.Workbook() # workbook
     ws = wb.create_sheet('Delta Calc', 0)
@@ -149,8 +151,7 @@ def main(argv):
         delta_pos = betav * atof(delta)                
             
         fi = i['Financial Instrument']
-        if verbose:
-            print("{0:}, {1:.0f}".format(fi, delta_pos))
+        quiet_print("{0:}, {1:.0f}".format(fi, delta_pos))
         if delta_pos != 0:
             write_row(ws, excel_row, 1, [i["Underlying"], fi, betav,
                                          atof(i["Delta"]), atof(delta), delta_pos])
