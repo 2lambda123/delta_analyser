@@ -144,7 +144,8 @@ def main(argv):
             if underlying in known_betas:
                 betav = known_betas[underlying]
             else:
-                print("ignoring: {0:}".format(i))
+                print("can't read beta for: {0:} -- assuming 1".format(i))
+                betav = 1
         delta_pos = betav * atof(delta)                
             
         fi = i['Financial Instrument']
@@ -154,6 +155,7 @@ def main(argv):
             write_row(ws, excel_row, 1, [i["Underlying"], fi, betav,
                                          atof(i["Delta"]), atof(delta), delta_pos])
             excel_row += 1
+        
         
         aggregate_delta += delta_pos
                       
