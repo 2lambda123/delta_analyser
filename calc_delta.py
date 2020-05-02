@@ -1,4 +1,11 @@
-#!/usr/bin/python 
+#!/usr/bin/python
+
+# ALPHAVANTAGE_API_KEY
+my_key='71N6UTNGSMQXQFWU'
+
+from alpha_vantage.timeseries import TimeSeries
+
+ts = TimeSeries(key=my_key)
 
 import csv
 # import random
@@ -10,6 +17,10 @@ import datetime
 
 import sys
 import getopt
+
+import json
+import time
+
 
 # cols in export from IB
 ib_export = {'ticker':1, 'sec_type':2, 'exchange':3, 'datestr':4, 'strike':5, 'putcall':6, 'size':7}
@@ -45,7 +56,7 @@ def read_positions(f):
 def create_betas():
     with open("betas.csv", 'w', newline = '') as betacsvfile:
         betawriter = csv.writer(betacsvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        
+
         for i in sorted(tickers):
             betawriter.writerow([i]+[1,2,3,4])
 
@@ -78,7 +89,7 @@ def read_known_betas(f):  # read additional betas from excel worksheet
             continue
         betavals[row[0].value] = row[1].value
     return betavals
-    
+
 
 def write_row(ws,row_number, col_start, lst):
     c = col_start
@@ -123,7 +134,7 @@ def main(argv):
     # betas = read_betas(beta_workbook)
     # can display_betas to check
     positions = read_positions(positions_file)
-    
+
     known_betas = read_known_betas(beta_workbook)
     quiet_print("known betas: {}".format(known_betas))
     display_positions(positions)
@@ -135,6 +146,14 @@ def main(argv):
                                  "Position Delta", "Exposure"])
     excel_row += 1
     for i in positions:
+        underlying = i['Underlying']
+        try:
+            quotevals = ts.get_quote_endpoint(symbol=underlying)
+            time.sleep(15) # free lib wants fewer than five calls per minute
+            # quote_dict = json.loads(quotevals)
+            print("Symbol {0:} price {1:}".format(underlying, quotevals[0]['05. price']))
+        except ValueError:
+            print("can't get price for {0:}".format(underlying))
         beta = i['Beta']
         delta = i['Delta Dollars']
         # n.b. b & d are strings
@@ -142,22 +161,21 @@ def main(argv):
         try:
             betav = locale.atof(beta)
         except ValueError:
-            underlying = i['Underlying']
             if underlying in known_betas:
                 betav = known_betas[underlying]
             else:
                 print("can't read beta for: {0:} -- assuming 1".format(i))
                 betav = 1
-        delta_pos = betav * atof(delta)                
-            
+        delta_pos = betav * atof(delta)
+
         fi = i['Financial Instrument']
         quiet_print("{0:}, {1:.0f}".format(fi, delta_pos))
         if delta_pos != 0:
             write_row(ws, excel_row, 1, [i["Underlying"], fi, betav,
                                          atof(i["Delta"]), atof(delta), delta_pos])
             excel_row += 1
-        
-        
+
+
         aggregate_delta += delta_pos
     gen_filename = "Delta_Values_"+datetime.datetime.now().strftime("%H%M%S")+".xlsx"
     wb.save(gen_filename)
