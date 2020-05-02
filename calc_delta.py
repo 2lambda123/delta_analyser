@@ -159,9 +159,10 @@ def main(argv):
         
         
         aggregate_delta += delta_pos
-                      
-    wb.save("Delta_Values_"+datetime.datetime.now().strftime("%H%M%S")+".xlsx")
-    print("Overall exposure: {0:.0f}".format(aggregate_delta))    
+    gen_filename = "Delta_Values_"+datetime.datetime.now().strftime("%H%M%S")+".xlsx"
+    wb.save(gen_filename)
+    print("Deltas saved to {0:}".format(gen_filename))
+    print("Overall exposure: ${0:n}".format(aggregate_delta))    
 
 if __name__ == "__main__":
    main(sys.argv[1:])
