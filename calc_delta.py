@@ -25,6 +25,8 @@ import getopt
 import json
 import time
 
+# import string
+
 
 # cols in export from IB
 ib_export = {'ticker':1, 'sec_type':2, 'exchange':3, 'datestr':4, 'strike':5, 'putcall':6, 'size':7}
@@ -122,17 +124,18 @@ def usage():
     print("calc_deltas --betafile=<betas.xlsx> --positionfile=<positions.csv>")
 
 def main(argv):
+    global verbose
     beta_workbook =     "betavals.xlsx"
     positions_file =    'positions.csv'
-
+    print("argv is {0:}".format(sys.argv))
     try:
-        opts, args = getopt.getopt(argv, "hvb:p:",["verbose", "betafile=", "positionfile="])
+        opts, args = getopt.getopt(sys.argv[1:], "hvb:p:",["verbose", "betafile=", "positionfile="])
     except getopt.GetoptError as err:
         print(err)
         usage()
         sys.exit(2)
     output = None
-    verbose = False
+    print("opts are: {0:} args are: {1:}".format(opts, args))
     for o, a in opts:
         if o in ("-v", "--verbose"):
             verbose = True
@@ -145,7 +148,6 @@ def main(argv):
             positions_file = a
         else:
             assert False, "unhandled option"
-
     # betas = read_betas(beta_workbook)
     # can display_betas to check
     positions = read_positions(positions_file)
@@ -164,6 +166,12 @@ def main(argv):
         underlying = i['Underlying']
         beta = i['Beta']
         delta = i['Delta Dollars']
+        volstr = i['Closing Impl. Vol. %']
+        quiet_print("vol is {0:}".format(volstr))
+        if volstr == "" or volstr == "NoMD":
+            volstr = i['Hist. Vol. %']
+        quiet_print("hist vol is {0:}".format(volstr))
+        vol = float(volstr.strip("%"))/100.;
         # n.b. b & d are strings
 #        print("{0:}, {1:}, {2:}".format(i['Financial Instrument'],beta, delta))
         try:
