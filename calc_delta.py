@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+#
+#   To do: put formulae on last line of spreadsheet to total rows, add up delta posn., and exposure
+#
+
 # ALPHAVANTAGE_API_KEY
 my_key='71N6UTNGSMQXQFWU'
 
@@ -103,6 +107,17 @@ def atof(cell):
     except ValueError:
         return 0.0
 
+def get_price_from_alpha_vantage(underlying):
+    try:
+            quotevals = ts.get_quote_endpoint(symbol=underlying)
+            time.sleep(15) # free lib wants fewer than five calls per minute
+            # quote_dict = json.loads(quotevals)
+            print("Symbol {0:} price {1:}".format(underlying, quotevals[0]['05. price']))
+    except ValueError:
+        print("can't get price for {0:}".format(underlying))
+    return quotevals
+        
+
 def usage():
     print("calc_deltas --betafile=<betas.xlsx> --positionfile=<positions.csv>")
 
@@ -147,13 +162,6 @@ def main(argv):
     excel_row += 1
     for i in positions:
         underlying = i['Underlying']
-        try:
-            quotevals = ts.get_quote_endpoint(symbol=underlying)
-            time.sleep(15) # free lib wants fewer than five calls per minute
-            # quote_dict = json.loads(quotevals)
-            print("Symbol {0:} price {1:}".format(underlying, quotevals[0]['05. price']))
-        except ValueError:
-            print("can't get price for {0:}".format(underlying))
         beta = i['Beta']
         delta = i['Delta Dollars']
         # n.b. b & d are strings

@@ -90,7 +90,7 @@ def main(argv):
                                    index:index_timeseries[0][i]['4. close']}
     
     print(cleaned_data)
-    data_as_json_string = json.dumps(cleaned_data)
+    data_as_json_string = json.dumps(cleaned_data, indent=4)
     
     with open("{0:}_{1:}.json".format(symbol, index),"w") as jsonfile:
         jsonfile.write(data_as_json_string)
