@@ -124,10 +124,9 @@ def usage():
     print("calc_deltas --betafile=<betas.xlsx> --positionfile=<positions.csv>")
 
 def main(argv):
-    global verbose
+    global verbose # if you change a variable in a function, it's assumed to be local unless explicitly declared
     beta_workbook =     "betavals.xlsx"
     positions_file =    'positions.csv'
-    print("argv is {0:}".format(sys.argv))
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hvb:p:",["verbose", "betafile=", "positionfile="])
     except getopt.GetoptError as err:
@@ -135,7 +134,6 @@ def main(argv):
         usage()
         sys.exit(2)
     output = None
-    print("opts are: {0:} args are: {1:}".format(opts, args))
     for o, a in opts:
         if o in ("-v", "--verbose"):
             verbose = True
@@ -160,7 +158,7 @@ def main(argv):
     ws = wb.create_sheet('Delta Calc', 0)
     excel_row = 1
     write_row(ws, excel_row, 1, ["Underlying", "Instrument", "Beta", "Delta",
-                                 "Position Delta", "Exposure"])
+                                 "Position Delta", "Exposure", "Volatility"])
     excel_row += 1
     for i in positions:
         underlying = i['Underlying']
@@ -188,7 +186,7 @@ def main(argv):
         quiet_print("{0:}, {1:.0f}".format(fi, delta_pos))
         if delta_pos != 0:
             write_row(ws, excel_row, 1, [i["Underlying"], fi, betav,
-                                         atof(i["Delta"]), atof(delta), delta_pos])
+                                         atof(i["Delta"]), atof(delta), delta_pos, vol])
             excel_row += 1
 
 
