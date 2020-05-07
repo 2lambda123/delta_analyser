@@ -169,7 +169,12 @@ def main(argv):
         if volstr == "" or volstr == "NoMD":
             volstr = i['Hist. Vol. %']
         quiet_print("hist vol is {0:}".format(volstr))
-        vol = float(volstr.strip("%"))/100.;
+        try:
+            vol = float(volstr.strip("%"))/100.;
+        except ValueError:
+            print("bad hist vol for {0:}".format(i['Underlying']))
+            vol = 1.0
+            
         # n.b. b & d are strings
 #        print("{0:}, {1:}, {2:}".format(i['Financial Instrument'],beta, delta))
         try:
