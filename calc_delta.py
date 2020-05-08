@@ -7,6 +7,8 @@
 # ALPHAVANTAGE_API_KEY
 my_key='71N6UTNGSMQXQFWU'
 
+vix_level = 0.35 # imp. vol. of SPX. Should be read in
+
 from alpha_vantage.timeseries import TimeSeries
 
 ts = TimeSeries(key=my_key)
@@ -125,10 +127,12 @@ def usage():
 
 def main(argv):
     global verbose # if you change a variable in a function, it's assumed to be local unless explicitly declared
+    global vix_level
     beta_workbook =     "betavals.xlsx"
     positions_file =    'positions.csv'
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hvb:p:",["verbose", "betafile=", "positionfile="])
+        opts, args = getopt.getopt(sys.argv[1:], "hvb:p:",["verbose", "betafile=",
+                                                           "positionfile=", "vix="])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -144,6 +148,9 @@ def main(argv):
             beta_workbook = a
         elif o in ("-p", "--positionfile"):
             positions_file = a
+        elif o in ("--vix"):
+            vix_level = float(a)/100.0
+            quiet_print("using vix level of {0:}".format(vix_level))
         else:
             assert False, "unhandled option"
     # betas = read_betas(beta_workbook)
@@ -166,15 +173,6 @@ def main(argv):
         delta = i['Delta Dollars']
         volstr = i['Closing Impl. Vol. %']
         quiet_print("vol is {0:}".format(volstr))
-        if volstr == "" or volstr == "NoMD":
-            volstr = i['Hist. Vol. %']
-        quiet_print("hist vol is {0:}".format(volstr))
-        try:
-            vol = float(volstr.strip("%"))/100.;
-        except ValueError:
-            print("bad hist vol for {0:}".format(i['Underlying']))
-            vol = 1.0
-            
         # n.b. b & d are strings
 #        print("{0:}, {1:}, {2:}".format(i['Financial Instrument'],beta, delta))
         try:
@@ -185,6 +183,16 @@ def main(argv):
             else:
                 print("can't read beta for: {0:} -- assuming 1".format(i))
                 betav = 1
+
+        if volstr == "" or volstr == "NoMD":
+            volstr = i['Hist. Vol. %']
+        quiet_print("hist vol is {0:}".format(volstr))
+        try:
+            vol = float(volstr.strip("%"))/100.;
+        except ValueError:
+            quiet_print("no hist vol for {0:}".format(i['Underlying']))
+            vol = vix_level * betav # not 100% sure this makes sense. 
+            
         delta_pos = betav * atof(delta)
 
         fi = i['Financial Instrument']
