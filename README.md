@@ -7,3 +7,7 @@ It works on a csv file exported from Interactive Brokers Trader Workstation. For
 (there is an encrypted version tho').
 
 I am not a Python expert, but any means, and this is largely a learning exercise for me.
+
+There are several source files. The only one I have done much work on is the calc_delta.py, which works out the overall market exposure. 
+
+I took some data (by hand) from the amazing resource that is [unicorn bay](https://unicornbay.com/tools/asset-correlations).
