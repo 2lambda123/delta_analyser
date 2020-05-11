@@ -1,14 +1,18 @@
 POSITIONS_FILE=positions.csv
-OUTPUT_FILE=Delta_values.xlsx # a hard link
+OUTPUT_FILE=Delta_values_latest.xlsx # a hard link
 
 # rule to know how to encrypt
 %.asc : %
 	gpg --batch --yes --encrypt -a --default-recipient-self $<
 
+$(OUTPUT_FILE):
+
+
 $(OUTPUT_FILE) : $(POSITIONS_FILE)
 	py calc_delta.py
 
-.PHONY : $(OUTPUT_FILE)
+clean:
+	rm $(OUTPUT_FILE) ;
 
 # PY?=python3
 # PELICAN?=pelican
