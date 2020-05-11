@@ -26,6 +26,7 @@ import getopt
 
 import json
 import time
+import os
 
 # import string
 
@@ -203,10 +204,17 @@ def main(argv):
                                          atof(i["Delta"]), atof(delta), delta_pos, vol])
             excel_row += 1
 
-
         aggregate_delta += delta_pos
-    gen_filename = "Delta_Values_"+datetime.datetime.now().strftime("%H%M%S")+".xlsx"
+        
+    DV_root = "Delta_Values_"
+    gen_filename = DV_root+datetime.datetime.now().strftime("%H%M%S")+".xlsx"
     wb.save(gen_filename)
+    link_name = DV_root+'latest.xlsx'
+    try:
+        os.remove(link_name)
+    except OSError:
+        print("{0:} not found".format(link_name))
+    os.link(gen_filename, DV_root+'latest.xlsx')
     print("Deltas saved to {0:}".format(gen_filename))
     print("Overall exposure: ${0:n}".format(aggregate_delta))    
 
