@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#! /usr/bin/env python
 
 #
 #   To do: put formulae on last line of spreadsheet to total rows, add up delta posn., and exposure
@@ -167,6 +167,7 @@ def main(argv):
     write_row(ws, excel_row, 1, ["Underlying", "Instrument", "Beta", "Delta",
                                  "Position Delta", "Exposure", "Volatility"])
     excel_row += 1
+    # you need to move this big loop into a subroutine which returns a dict of all the values you need.
     for i in positions:
         underlying = i['Underlying']
         beta = i['Beta']
@@ -174,7 +175,7 @@ def main(argv):
         volstr = i['Closing Impl. Vol. %']
         quiet_print("vol is {0:}".format(volstr))
         # n.b. b & d are strings
-#        print("{0:}, {1:}, {2:}".format(i['Financial Instrument'],beta, delta))
+        quiet_print("{0:}, {1:}, {2:}".format(i['Financial Instrument'],beta, delta))
         try:
             betav = locale.atof(beta)
         except ValueError:
