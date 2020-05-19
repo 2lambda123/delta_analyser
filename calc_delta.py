@@ -4,19 +4,8 @@
 #   To do: put formulae on last line of spreadsheet to total rows, add up delta posn., and exposure
 #
 
-# ALPHAVANTAGE_API_KEY
-my_key='71N6UTNGSMQXQFWU'
-
-vix_level = 0.35 # imp. vol. of SPX. Should be read in
-
-from alpha_vantage.timeseries import TimeSeries
-
-ts = TimeSeries(key=my_key)
-
 import csv
-# import random
 import locale
-locale.setlocale( locale.LC_ALL, 'en_US.UTF-8' )  # so you can interpret e.g. "1,000.0" as a number
 
 import openpyxl as opx
 import datetime
@@ -24,9 +13,22 @@ import datetime
 import sys
 import getopt
 
-import json
-import time
+# import json
+# import time
 import os
+
+
+# ALPHAVANTAGE_API_KEY
+MY_KEY = '71N6UTNGSMQXQFWU'
+
+vix_level = 0.35 # imp. vol. of SPX. Should be read in
+
+from alpha_vantage.timeseries import TimeSeries
+
+ts = TimeSeries(key=my_key)
+
+
+locale.setlocale( locale.LC_ALL, 'en_US.UTF-8' )  # so you can interpret e.g. "1,000.0" as a number
 
 # import string
 
@@ -112,16 +114,16 @@ def atof(cell):
     except ValueError:
         return 0.0
 
-def get_price_from_alpha_vantage(underlying):
-    try:
-            quotevals = ts.get_quote_endpoint(symbol=underlying)
-            time.sleep(15) # free lib wants fewer than five calls per minute
-            # quote_dict = json.loads(quotevals)
-            print("Symbol {0:} price {1:}".format(underlying, quotevals[0]['05. price']))
-    except ValueError:
-        print("can't get price for {0:}".format(underlying))
-    return quotevals
-        
+##def get_price_from_alpha_vantage(underlying):
+##    try:
+##        quotevals = ts.get_quote_endpoint(symbol=underlying)
+##        time.sleep(15) # free lib wants fewer than five calls per minute
+##        # quote_dict = json.loads(quotevals)
+##        print("Symbol {0:} price {1:}".format(underlying, quotevals[0]['05. price']))
+##    except ValueError:
+##        print("can't get price for {0:}".format(underlying))
+##    return quotevals
+##        
 
 def usage():
     print("calc_deltas --betafile=<betas.xlsx> --positionfile=<positions.csv>")
@@ -190,7 +192,7 @@ def main(argv):
             volstr = i['Hist. Vol. %']
         quiet_print("hist vol is {0:}".format(volstr))
         try:
-            vol = float(volstr.strip("%"))/100.;
+            vol = float(volstr.strip("%"))/100.
         except ValueError:
             quiet_print("no hist vol for {0:}".format(i['Underlying']))
             vol = vix_level * betav # not 100% sure this makes sense. 
@@ -223,8 +225,8 @@ def main(argv):
 
 if __name__ == "__main__":
     if main(sys.argv[1:]):
-        keyword = "without"
+        key_word = "without"
     else:
-        keyword = "with"
-    print("calculation finished {0:} errors".format(keyword))
+        key_word = "with"
+    print("calculation finished {0:} errors".format(key_word))
 
