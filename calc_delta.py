@@ -213,10 +213,18 @@ def main(argv):
     try:
         os.remove(link_name)
     except OSError:
-        print("{0:} not found".format(link_name))
+        print("error deleting {0:} (is it open in Excel?)".format(link_name))
+        return False
     os.link(gen_filename, DV_root+'latest.xlsx')
     print("Deltas saved to {0:}".format(gen_filename))
-    print("Overall exposure: ${0:n}".format(aggregate_delta))    
+    print("Deltas hard linked to {0:}".format(link_name))
+    print("Overall exposure: ${0:n}".format(aggregate_delta))
+    return True
 
 if __name__ == "__main__":
-   main(sys.argv[1:])
+    if main(sys.argv[1:]):
+        keyword = "without"
+    else:
+        keyword = "with"
+    print("calculation finished {0:} errors".format(keyword))
+

@@ -11,8 +11,10 @@ $(OUTPUT_FILE):
 $(OUTPUT_FILE) : $(POSITIONS_FILE)
 	py calc_delta.py
 
+$(POSITIONS_FILE).asc:
+
 clean:
-	rm $(OUTPUT_FILE) ;
+	rm $(OUTPUT_FILE) $(POSITIONS_FILE).asc ;
 
 # PY?=python3
 # PELICAN?=pelican
