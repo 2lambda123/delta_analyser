@@ -25,7 +25,7 @@ vix_level = 0.35 # imp. vol. of SPX. Should be read in
 
 from alpha_vantage.timeseries import TimeSeries
 
-ts = TimeSeries(key=my_key)
+ts = TimeSeries(key=MY_KEY)
 
 
 locale.setlocale( locale.LC_ALL, 'en_US.UTF-8' )  # so you can interpret e.g. "1,000.0" as a number
@@ -50,7 +50,7 @@ tickers = dict()
 def read_positions_old():
     positions = []
     with open("example.csv", newline='') as csvfile:
-        position_reader = csv.reader(csvfile)
+        position_reader = csv.reader(csvfile, dialect='excel', quoting=csv.QUOTE_NUMERIC)
         for row in position_reader:
             positions.append(row)
     return positions
@@ -87,9 +87,6 @@ def display_positions(p):
     for i in p:
         quiet_print (i)
 
-#known_betas={'RUT':1, 'SX7P':1, 'SI':0, 'ROKU':2, 'ZAR':0, 'NG':0, 'LK':0.2,
-#             'HCC':0.5, 'ZM':1.7, 'FTMIB':1, 'ESTX50':1, 'ES':1, 'EMB':0, 'CVNA':1.5, 'CL':0,
-#             'BNDX':1.8, 'BTP':0, 'BKLN':0}
 
 def read_known_betas(f):  # read additional betas from excel worksheet
     wb = opx.load_workbook(f)
@@ -109,10 +106,10 @@ def write_row(ws,row_number, col_start, lst):
         c += 1
 
 def atof(cell):
-    try:
-        return locale.atof(cell)
-    except ValueError:
+    if cell == '' or cell == 'NoMD':
         return 0.0
+    else:
+        return locale.atof(cell)
 
 ##def get_price_from_alpha_vantage(underlying):
 ##    try:
@@ -174,19 +171,27 @@ def main(argv):
     for i in positions:
         underlying = i['Underlying']
         beta = i['Beta']
-        delta = i['Delta Dollars']
+        delta_str = i['Delta Dollars']
+        try:
+            delta = locale.atof(delta_str)
+        except ValueError:
+            print("couldn't convert {0:} to float, using 0".format(delta_str))
+            delta = 0.0
+            
+        quiet_print("delta={0:} of type {1:}".format(delta, type(delta)))
         volstr = i['Closing Impl. Vol. %']
         quiet_print("vol is {0:}".format(volstr))
         # n.b. b & d are strings
-        quiet_print("{0:}, {1:}, {2:}".format(i['Financial Instrument'],beta, delta))
+        quiet_print("{0:}, beta={1:}, delta={2:}".format(i['Financial Instrument'],beta, delta))
         try:
-            betav = locale.atof(beta)
-        except ValueError:
+            betav = atof(beta) # local atof uses locale.atof
+        except ValueError:            
             if underlying in known_betas:
-                betav = known_betas[underlying]
+                print("underlying={0:}, beta={1:}".format(underlying, known_betas[underlying]))
+                betav = atof(known_betas[underlying])
             else:
                 print("can't read beta for: {0:} -- assuming 1".format(i))
-                betav = 1
+                betav = 1.0
 
         if volstr == "" or volstr == "NoMD":
             volstr = i['Hist. Vol. %']
@@ -197,13 +202,17 @@ def main(argv):
             quiet_print("no hist vol for {0:}".format(i['Underlying']))
             vol = vix_level * betav # not 100% sure this makes sense. 
             
-        delta_pos = betav * atof(delta)
+        try:
+            delta_pos = betav * delta
+        except ValueError:
+            print("something wrong with betav={0:} or delta={1:}".format(betav, delta))
+            
 
         fi = i['Financial Instrument']
         quiet_print("{0:}, {1:.0f}".format(fi, delta_pos))
         if delta_pos != 0:
             write_row(ws, excel_row, 1, [i["Underlying"], fi, betav,
-                                         atof(i["Delta"]), atof(delta), delta_pos, vol])
+                                         i["Delta"], delta, delta_pos, vol])
             excel_row += 1
 
         aggregate_delta += delta_pos
