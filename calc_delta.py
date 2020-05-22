@@ -169,14 +169,15 @@ def main(argv):
     excel_row += 1
     # you need to move this big loop into a subroutine which returns a dict of all the values you need.
     for i in positions:
+        print("Processing {0:}".format(i['Financial Instrument']))
         underlying = i['Underlying']
         beta = i['Beta']
         delta_str = i['Delta Dollars']
         try:
             delta = locale.atof(delta_str)
         except ValueError:
-            print("couldn't convert {0:} to float, using 0".format(delta_str))
-            delta = 0.0
+            delta = atof(i['Market Value'])
+            print("couldn't convert {0:} to float, using mkt val: {1:}".format(delta_str, delta))
             
         quiet_print("delta={0:} of type {1:}".format(delta, type(delta)))
         volstr = i['Closing Impl. Vol. %']
