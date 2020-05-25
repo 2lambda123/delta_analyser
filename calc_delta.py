@@ -3,6 +3,14 @@
 #
 #   To do: put formulae on last line of spreadsheet to total rows, add up delta posn., and exposure
 #
+# To do: change read_betavals so that it can cope with formulae in the beta column
+# (now the .value selector produces a string.
+# You need to understand the load_worksheet function better).
+#
+# Also, TWS handles forex hopelessly: the "Delta Dollars" col. comes out in the foreign currency.
+# so a GBP.JPY position is presented as enormous.
+# You frigged this by dividing the beta value, but that's wrong.
+# maybe the beta value should be zero: are cross rates really solidly correlated with SPY?
 
 import csv
 import locale
@@ -41,8 +49,8 @@ ib_export = {'ticker':1, 'sec_type':2, 'exchange':3, 'datestr':4, 'strike':5, 'p
 
 verbose = False
 
-def quiet_print(*args):
-    if verbose:
+def quiet_print(*args, force=False):
+    if verbose or force:
         print(args)
 
 tickers = dict()
@@ -106,10 +114,12 @@ def write_row(ws,row_number, col_start, lst):
         c += 1
 
 def atof(cell):
-    if cell == '' or cell == 'NoMD':
-        return 0.0
-    else:
-        return locale.atof(cell)
+    value = 0.
+    try:
+        value = locale.atof(cell)
+    except:
+        quiet_print("failed to convert {0:}".format(cell)) 
+    return value
 
 ##def get_price_from_alpha_vantage(underlying):
 ##    try:
@@ -158,7 +168,7 @@ def main(argv):
     positions = read_positions(positions_file)
 
     known_betas = read_known_betas(beta_workbook)
-    quiet_print("known betas: {}".format(known_betas))
+    quiet_print("known betas: {}".format(known_betas), force=True)
     display_positions(positions)
     aggregate_delta = 0
     wb = opx.Workbook() # workbook
@@ -169,31 +179,34 @@ def main(argv):
     excel_row += 1
     # you need to move this big loop into a subroutine which returns a dict of all the values you need.
     for i in positions:
-        print("Processing {0:}".format(i['Financial Instrument']))
+        fi = i['Financial Instrument']
+        print("{0:}".format(fi))
         underlying = i['Underlying']
         beta = i['Beta']
         delta_str = i['Delta Dollars']
+        delta = atof(delta_str)
+        if delta == 0.:
+            print("zero delta for {0:} -- is that right? Will use mkt value.".format(fi))
+            delta = atof(i['Market Value'])
         try:
             delta = locale.atof(delta_str)
         except ValueError:
-            delta = atof(i['Market Value'])
-            print("couldn't convert {0:} to float, using mkt val: {1:}".format(delta_str, delta))
+            print("{2:}: couldn't convert {0:} to float, using mkt val: {1:}".format(delta_str, delta, fi))
             
         quiet_print("delta={0:} of type {1:}".format(delta, type(delta)))
         volstr = i['Closing Impl. Vol. %']
         quiet_print("vol is {0:}".format(volstr))
         # n.b. b & d are strings
         quiet_print("{0:}, beta={1:}, delta={2:}".format(i['Financial Instrument'],beta, delta))
-        try:
-            betav = atof(beta) # local atof uses locale.atof
-        except ValueError:            
+        betav = atof(beta) # local atof uses locale.atof
+        if betav == 0.:
             if underlying in known_betas:
                 print("underlying={0:}, beta={1:}".format(underlying, known_betas[underlying]))
-                betav = atof(known_betas[underlying])
+                betav = known_betas[underlying]
             else:
                 print("can't read beta for: {0:} -- assuming 1".format(i))
                 betav = 1.0
-
+        
         if volstr == "" or volstr == "NoMD":
             volstr = i['Hist. Vol. %']
         quiet_print("hist vol is {0:}".format(volstr))
@@ -209,14 +222,13 @@ def main(argv):
             print("something wrong with betav={0:} or delta={1:}".format(betav, delta))
             
 
-        fi = i['Financial Instrument']
         quiet_print("{0:}, {1:.0f}".format(fi, delta_pos))
-        if delta_pos != 0:
-            write_row(ws, excel_row, 1, [i["Underlying"], fi, betav,
+        write_row(ws, excel_row, 1, [i["Underlying"], fi, betav,
                                          i["Delta"], delta, delta_pos, vol])
-            excel_row += 1
+        excel_row += 1
 
         aggregate_delta += delta_pos
+        # end of loop
         
     DV_root = "Delta_Values_"
     gen_filename = DV_root+datetime.datetime.now().strftime("%H%M%S")+".xlsx"
