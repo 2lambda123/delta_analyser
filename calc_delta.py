@@ -168,7 +168,7 @@ def main(argv):
     positions = read_positions(positions_file)
 
     known_betas = read_known_betas(beta_workbook)
-    quiet_print("known betas: {}".format(known_betas), force=True)
+    quiet_print("known betas: {}".format(known_betas), force=False)
     display_positions(positions)
     aggregate_delta = 0
     wb = opx.Workbook() # workbook
@@ -201,7 +201,6 @@ def main(argv):
         betav = atof(beta) # local atof uses locale.atof
         if betav == 0.:
             if underlying in known_betas:
-                print("underlying={0:}, beta={1:}".format(underlying, known_betas[underlying]))
                 betav = known_betas[underlying]
             else:
                 print("can't read beta for: {0:} -- assuming 1".format(i))
