@@ -49,6 +49,8 @@ ib_export = {'ticker':1, 'sec_type':2, 'exchange':3, 'datestr':4, 'strike':5, 'p
 
 verbose = False
 
+exclude_sec_types = set() # comma-sep list of sec types to be excluded
+
 def quiet_print(*args, force=False):
     if verbose or force:
         print(args)
@@ -67,6 +69,7 @@ def read_positions(f):
     positions = [] # each entry will be of type dict
     with open(f, newline = '') as csvfile:
         header = [h.strip() for h in csvfile.readline().split(',')]
+        quiet_print(header)
         reader = csv.DictReader(csvfile, fieldnames=header)
         for row in reader:
             positions.append(row)
@@ -103,7 +106,7 @@ def read_known_betas(f):  # read additional betas from excel worksheet
     for row in ws.rows:
         if (row[0].value == "Ticker"): # i.e. 1st row
             continue
-        betavals[row[0].value] = row[1].value
+        betavals[row[0].value] = [row[1].value, row[2].value] # i.e. beta and sectype
     return betavals
 
 
@@ -138,11 +141,12 @@ def usage():
 def main(argv):
     global verbose # if you change a variable in a function, it's assumed to be local unless explicitly declared
     global vix_level
+    global exclude_sec_types
     beta_workbook =     "betavals.xlsx"
     positions_file =    'positions.csv'
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hvb:p:",["verbose", "betafile=",
-                                                           "positionfile=", "vix="])
+                                                           "positionfile=", "vix=", "exclude="])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -161,6 +165,9 @@ def main(argv):
         elif o in ("--vix"):
             vix_level = float(a)/100.0
             quiet_print("using vix level of {0:}".format(vix_level))
+        elif o in ("--exclude"):
+            exclude_sec_types = a.split(",")
+            quiet_print("excluding: {0:}".format(exclude_sec_types))
         else:
             assert False, "unhandled option"
     # betas = read_betas(beta_workbook)
@@ -180,7 +187,7 @@ def main(argv):
     # you need to move this big loop into a subroutine which returns a dict of all the values you need.
     for i in positions:
         fi = i['Financial Instrument']
-        print("{0:}".format(fi))
+        quiet_print("{0:}".format(fi))
         underlying = i['Underlying']
         beta = i['Beta']
         delta_str = i['Delta Dollars']
@@ -201,7 +208,10 @@ def main(argv):
         betav = atof(beta) # local atof uses locale.atof
         if betav == 0.:
             if underlying in known_betas:
-                betav = known_betas[underlying]
+                if known_betas[underlying][1] in exclude_sec_types:
+                    betav = 0.
+                else:
+                    betav = known_betas[underlying][0]
             else:
                 print("can't read beta for: {0:} -- assuming 1".format(i))
                 betav = 1.0
