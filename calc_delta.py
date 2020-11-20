@@ -144,6 +144,7 @@ def main(argv):
     global exclude_sec_types
     beta_workbook =     "betavals.xlsx"
     positions_file =    'positions.csv'
+    unknown_betas = []
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hvb:p:",["verbose", "betafile=",
                                                            "positionfile=", "vix=", "exclude="])
@@ -213,7 +214,9 @@ def main(argv):
                 else:
                     betav = known_betas[underlying][0]
             else:
-                print("can't read beta for: {0:} -- assuming 1".format(i))
+                if underlying not in unknown_betas:
+                    unknown_betas.append(underlying)
+                    quiet_print("can't read beta for: {0:} -- assuming 1".format(underlying))
                 betav = 1.0
         
         if volstr == "" or volstr == "NoMD":
@@ -252,6 +255,8 @@ def main(argv):
     print("Deltas saved to {0:}".format(gen_filename))
     print("Deltas hard linked to {0:}".format(link_name))
     print("Overall exposure: ${0:n}".format(aggregate_delta))
+    if len(unknown_betas) > 0: 
+        print("failed to obtain betas for {0:}".format(sorted(unknown_betas)))
     return True
 
 if __name__ == "__main__":
